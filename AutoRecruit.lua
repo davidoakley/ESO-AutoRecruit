@@ -272,6 +272,7 @@ function AR.Initialize(event, addon)
 
   LibCustomMenu:RegisterPlayerContextMenu(AR.context)
 
+  WORLD_MAP_LOCATIONS_FRAGMENT:RegisterCallback("StateChange", AR.MapLocationsStateChange)
 end
 
 em:RegisterForEvent("AutoRecruitInitialize", EVENT_ADD_ON_LOADED, function(...) AR.Initialize(...) end)
