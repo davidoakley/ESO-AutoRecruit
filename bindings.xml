@@ -1,0 +1,27 @@
+<Bindings>
+	<Layer name="SI_KEYBINDINGS_LAYER_GENERAL">
+		<Category name="|c6C00FFAuto Recruit">
+			<Action name="AUTO_RECRUIT_PASTE1">
+				<Up>AutoRecruitKeybind.pasteText(1)</Up>
+			</Action>
+			<Action name="AUTO_RECRUIT_PASTE2">
+				<Up>AutoRecruitKeybind.pasteText(2)</Up>
+			</Action>			
+			<Action name="AUTO_RECRUIT_PASTE3">
+				<Up>AutoRecruitKeybind.pasteText(3)</Up>
+			</Action>			
+			<Action name="AUTO_RECRUIT_PASTE4">
+				<Up>AutoRecruitKeybind.pasteText(4)</Up>
+			</Action>			
+			<Action name="AUTO_RECRUIT_PASTE5">
+				<Up>AutoRecruitKeybind.pasteText(5)</Up>
+			</Action>
+			<Action name="AUTO_RECRUIT_STARTPORT">
+				<Up>AutoRecruitKeybind.start()</Up>
+			</Action>
+			<Action name="AUTO_RECRUIT_STOPPORT">
+				<Up>AutoRecruitKeybind.stop()</Up>
+			</Action>
+		</Category>
+	</Layer>
+</Bindings>
