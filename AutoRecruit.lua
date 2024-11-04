@@ -201,12 +201,30 @@ AR.defaults = {
     end
   end
 
+  local function getMappedZoneIds()
+	local ret = {}
+    for i = 1, GetNumMaps() do
+        local mapName, mapType, mapContentType, zoneIndex, description = GetMapInfoByIndex(i)
+		local zoneId = GetZoneId(zoneIndex)
+		ret[GetZoneId(zoneIndex)] = true
+		-- d("getMappedZoneIds: + Zone ID "..zoneId..": "..GetZoneNameById(zoneId))
+    end
+	return ret
+  end
 
 	function AR.getZones()
+		local mappedZIs = getMappedZoneIds()
 		for i=1, GetNumZones() do
 			local zoneID = GetZoneId(i)
-			if GetZoneId(i) == GetParentZoneId(zoneID) and GetNumSkyshardsInZone(zoneID)>=AR.settings.minSkyshards and zoneID~=181 and zoneID~=584 and CanJumpToPlayerInZone(zoneID) then
+			-- add Apocrypha and Arteum; remove Cyrodiil and Imperial City
+			if (GetZoneId(i) == GetParentZoneId(zoneID) or zoneID==1413 or zoneID==1027) and
+			   GetNumSkyshardsInZone(zoneID)>=AR.settings.minSkyshards and
+			   zoneID~=181 and zoneID~=584 and CanJumpToPlayerInZone(zoneID) and
+			   mappedZIs[zoneID] == true then
 			  table.insert(AR.zones, zoneID)
+			   d("AutoRecruit: + Zone ID "..zoneID..": "..GetZoneNameById(zoneID))
+			-- else
+			--   d("AutoRecruit: - Zone ID "..zoneID..": "..GetZoneNameById(zoneID))
 			end
 		end
 	end
