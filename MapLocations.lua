@@ -1,9 +1,65 @@
 if AutoRecruit == nil then AutoRecruit = {} end
 local AR = AutoRecruit
 
+local function tableContains(table, value)
+    for i = 1,#table do
+    --    d("* "..table[i].." vs "..value)
+      if (table[i] == value) then
+        return true
+      end
+    end
+    return false
+end
+
+local ZONESTATE_HIDDEN = 0
+local ZONESTATE_NOJUMP = 1
+local ZONESTATE_AVAILABLE = 2
+
+local function hasFriendInZone(zoneId)
+    AR.getOnlinePlayers()
+    local ownZone = GetUnitWorldPosition("player")
+    for i=1, #AR.onlinePlayers do
+        local userID = AR.onlinePlayers[i][1]
+        local userZone = AR.onlinePlayers[i][2]
+  
+        if userZone == zoneId and ownZone ~= userZone then
+            return true
+         elseif i==#AR.onlinePlayers then
+            return false
+        end
+    end
+    return false
+end
+
+local function getZoneStates()
+    local zones = {}
+    for i=1, GetNumZones() do
+        local zoneID = GetZoneId(i)
+        if GetZoneId(i) == GetParentZoneId(zoneID) and
+           CanJumpToPlayerInZone(zoneID) and
+           (GetNumSkyshardsInZone(zoneID)>=AR.settings.minSkyshards) and
+           zoneID~=181 and zoneID~=584 then
+            if hasFriendInZone(zoneID) then
+                zones[zoneID] = ZONESTATE_AVAILABLE
+                --d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - available")
+            else
+                zones[zoneID] = ZONESTATE_NOJUMP
+            --     d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - nojump")
+            end
+        elseif zoneID == 1027 then
+            -- d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - hidden parent "..GetParentZoneId(zoneID).." shards "..GetNumSkyshardsInZone(zoneID))
+            --     zones[zoneID] = ZONESTATE_HIDDEN
+        end
+    end
+    return zones
+end
+
 function WORLD_MAP_LOCATIONS:UpdateLocationList()
 	local guild = AR.getGuildIndex(AR.getIDfromName(AR.settings.recruitFor))
     local cooldown = AR.settings.adCooldown[guild]
+
+    local zoneStates = getZoneStates()
+    -- AR.getZones()
     -- if not addon.playerAlliance then
     --     addon:MarkDirty()
     --     return
@@ -18,28 +74,57 @@ function WORLD_MAP_LOCATIONS:UpdateLocationList()
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     for i = 1, #scrollData do
         local data = scrollData[i].data
+
+        -- TODO: Need to compare Location data zone with AR.lastPosted entries;
+        -- get the proper name for this Location zone
+        local mapName, mapType, mapContentType, zoneIndex, description = GetMapInfoByIndex(data.index)
+        local zoneName = GetZoneNameByIndex(zoneIndex)
+        local zoneId = GetZoneId(zoneIndex)
+        -- local zoneIndex = GetZoneId(zoneIndex)
+        --d("AutoRecruit: map '"..data.locationName.."' -> zone "..zoneIndex.." '"..zoneName.."'")
+
         --d(data.dataEntry.control:GetChild(1))
-        --data.dataEntry.control:GetChild(1):SetColor(1, 1, 1, 1)
         local label = data.dataEntry.control:GetChild(1)
         local tex = label:GetChild(1)
         if label and tex == nil then
             tex = WINDOW_MANAGER:CreateControl("$(parent)Sent", label, CT_TEXTURE)
             tex:SetAnchor(TOPLEFT,label,TOPRIGHT,0,0)
             tex:SetDimensions(26,26)
-            tex:SetTexture("esoui/art/tutorial/chat-notifications_up.dds")
 		end
 		local hidden = true
-		if AR.lastPosted[data.locationName] then
-			local cooldown = AR.settings.adCooldown[guild]*60-(GetTimeStamp()-AR.lastPosted[data.locationName])
-		
-			if cooldown>10 then
-				hidden = false
-			end
-			-- d(data.locationName..': '..cooldown)
-		end
+        local inCooldown = false
+        local noJump = false
+        if zoneStates[zoneId] then
+            hidden = false
+            local lastPosted = AR.lastPosted[zoneName]
+            if lastPosted then
+                local cooldown = AR.settings.adCooldown[guild]*60-(GetTimeStamp()-lastPosted)
+            
+                if cooldown>10 then
+                    inCooldown = true
+                end
+                -- d(data.locationName..': '..cooldown)
+            elseif zoneStates[zoneId] == ZONESTATE_NOJUMP then
+                noJump = true
+            end
+        else
+            d("AutoRecruit: zoneId "..zoneId.." '"..zoneName.."' not in zones")
+        end
 		tex:SetHidden(hidden)
-
-        local locName = data.locationName
+        local r, g, b = ZO_TOOLTIP_DEFAULT_COLOR:UnpackRGB()
+        if inCooldown then
+            tex:SetTexture("esoui/art/miscellaneous/check.dds")
+            tex:SetColor(r, g, b, 1)
+            tex.info = "Recruitment in cooldown"
+        elseif noJump then
+            tex:SetColor(1,1,1, 0.5)
+            tex:SetTexture("esoui/art/chatwindow/chat_notification_disabled.dds")
+            tex.info = "No friend to jump to"
+        else
+            tex:SetColor(1,1,1, 1)
+            tex:SetTexture("esoui/art/chatwindow/chat_notification_up.dds")
+            tex.info = "Jump available"
+        end
     end
     -- ARCooldownMarkers.DATA = scrollData[1].data
     -- ARCooldownMarkers.ARSV = arsv
