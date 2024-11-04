@@ -13,7 +13,8 @@ end
 
 local ZONESTATE_HIDDEN = 0
 local ZONESTATE_NOJUMP = 1
-local ZONESTATE_AVAILABLE = 2
+local ZONESTATE_FRIEND = 2
+local ZONESTATE_HOUSE = 3
 
 local function hasFriendInZone(zoneId)
     AR.getOnlinePlayers()
@@ -36,8 +37,13 @@ local function getZoneStates()
     local zones = {}
     for i=1, #AR.zones do
         local zoneID = AR.zones[i] --GetZoneId(i)
-        if hasFriendInZone(zoneID) then
-            zones[zoneID] = ZONESTATE_AVAILABLE
+
+        local houseId = AR.HM:GetHouseIDFromZoneID(zoneID)
+        if houseId and CanJumpToHouseFromCurrentLocation() then
+            -- d("|c6C00FFAuto Port - |cFFFFFF " .. AR.HM:GetName(houseId) .. " in " .. GetZoneNameById(zoneID))
+            zones[zoneID] = ZONESTATE_HOUSE
+        elseif hasFriendInZone(zoneID) then
+            zones[zoneID] = ZONESTATE_FRIEND
             --d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - available")
         else
             zones[zoneID] = ZONESTATE_NOJUMP
@@ -116,16 +122,20 @@ function WORLD_MAP_LOCATIONS:UpdateLocationList()
         local r, g, b = ZO_TOOLTIP_DEFAULT_COLOR:UnpackRGB()
         if inCooldown then
             tex:SetTexture("esoui/art/miscellaneous/check.dds")
-            tex:SetColor(1,0.7,0.7, 1)
+            tex:SetColor(0.7,1,0.7, 1)
             tex.info = "Recruitment in cooldown"
         elseif noJump then
             tex:SetColor(1,1,1, 1)
             tex:SetTexture("esoui/art/chatwindow/chat_notification_disabled.dds")
             tex.info = "No friend to jump to"
+        elseif zoneStates[zoneId] == ZONESTATE_HOUSE then
+            tex:SetColor(1,0.9,0.7, 1)
+            tex:SetTexture("esoui/art/chatwindow/chat_notification_up.dds")
+            tex.info = "Jump to house"
         else
             tex:SetColor(1,1,1, 1)
             tex:SetTexture("esoui/art/chatwindow/chat_notification_up.dds")
-            tex.info = "Jump available"
+            tex.info = "Jump to friend"
         end
     end
     -- ARCooldownMarkers.DATA = scrollData[1].data

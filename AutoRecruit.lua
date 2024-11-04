@@ -216,13 +216,13 @@ AR.defaults = {
 		local mappedZIs = getMappedZoneIds()
 		for i=1, GetNumZones() do
 			local zoneID = GetZoneId(i)
-			-- add Apocrypha and Arteum; remove Cyrodiil and Imperial City
+			-- add Apocrypha and Arteum; remove "Clean Test", Cyrodiil and Imperial City
 			if (GetZoneId(i) == GetParentZoneId(zoneID) or zoneID==1413 or zoneID==1027) and
 			   GetNumSkyshardsInZone(zoneID)>=AR.settings.minSkyshards and
-			   zoneID~=181 and zoneID~=584 and CanJumpToPlayerInZone(zoneID) and
+			   zoneID~=181 and zoneID~=584 and zoneID~=2 and CanJumpToPlayerInZone(zoneID) and
 			   mappedZIs[zoneID] == true then
 			  table.insert(AR.zones, zoneID)
-			   d("AutoRecruit: + Zone ID "..zoneID..": "..GetZoneNameById(zoneID))
+			--   d("AutoRecruit: + Zone ID "..zoneID..": "..GetZoneNameById(zoneID))
 			-- else
 			--   d("AutoRecruit: - Zone ID "..zoneID..": "..GetZoneNameById(zoneID))
 			end
@@ -252,6 +252,7 @@ AR.defaults = {
 
 
   function AutoRecruitKeybind.start()
+    AR.HM:Update()
   	AR.status = 1
   	AR.start()
   end
@@ -283,6 +284,7 @@ function AR.Initialize(event, addon)
 
 	AR.MakeMenu()
 	AR.getZones()
+	AR.HM = AR.InitHouseDataManager()
 
 	em:RegisterForEvent("AutoRecruitStart", EVENT_PLAYER_ACTIVATED, function(...) AR.RefreshWindow(...) end)
   em:RegisterForEvent("AutoRecruitStart", EVENT_CHAT_MESSAGE_CHANNEL, AR.chatMessage)
@@ -370,6 +372,8 @@ function AR.start()
   local guild = AR.getGuildIndex(AR.getIDfromName(AR.settings.recruitFor))
   local ownZone = GetUnitWorldPosition("player")
 
+  AR.HM:Update()
+
   if AR.nextZone == 1 then
   	AR.lastRound = GetTimeStamp()
   end
@@ -379,7 +383,7 @@ function AR.start()
   end
 
  	if AR.lastPosted[nextZoneName] and AR.settings.skipZoneOnCD then
- 		cooldown = AR.settings.adCooldown[guild]*60-(GetTimeStamp()-AR.lastPosted[nextZoneName])
+ 		local cooldown = AR.settings.adCooldown[guild]*60-(GetTimeStamp()-AR.lastPosted[nextZoneName])
  		
  		if cooldown>10 then
  			d("|c6C00FFAuto Port - |cFFFFFF" .. nextZoneName .. " is still on cooldown. Skipping this zone...")
@@ -389,6 +393,15 @@ function AR.start()
  		end
  	end
 
+	local houseId = AR.HM:GetHouseIDFromZoneID(AR.zones[AR.nextZone])
+	if houseId and CanJumpToHouseFromCurrentLocation() then
+		local houseZone = AR.zones[AR.nextZone]
+		d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. AR.HM:GetName(houseId) .. " in " .. nextZoneName)
+		AR.nextZone = AR.nextZone + 1
+		zo_callLater(function() RequestJumpToHouse(houseId, true) end, 100)
+		em:RegisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED, function() AR.afterPort(houseZone) end)
+		return
+	end
 
   for i=1, #AR.onlinePlayers do
   	local userID = AR.onlinePlayers[i][1]
