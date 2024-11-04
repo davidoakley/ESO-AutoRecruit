@@ -32,24 +32,20 @@ local function hasFriendInZone(zoneId)
 end
 
 local function getZoneStates()
+    AR.getZones()
     local zones = {}
-    for i=1, GetNumZones() do
-        local zoneID = GetZoneId(i)
-        if GetZoneId(i) == GetParentZoneId(zoneID) and
-           CanJumpToPlayerInZone(zoneID) and
-           (GetNumSkyshardsInZone(zoneID)>=AR.settings.minSkyshards) and
-           zoneID~=181 and zoneID~=584 then
-            if hasFriendInZone(zoneID) then
-                zones[zoneID] = ZONESTATE_AVAILABLE
-                --d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - available")
-            else
-                zones[zoneID] = ZONESTATE_NOJUMP
-            --     d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - nojump")
-            end
-        elseif zoneID == 1027 then
-            -- d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - hidden parent "..GetParentZoneId(zoneID).." shards "..GetNumSkyshardsInZone(zoneID))
-            --     zones[zoneID] = ZONESTATE_HIDDEN
+    for i=1, #AR.zones do
+        local zoneID = AR.zones[i] --GetZoneId(i)
+        if hasFriendInZone(zoneID) then
+            zones[zoneID] = ZONESTATE_AVAILABLE
+            --d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - available")
+        else
+            zones[zoneID] = ZONESTATE_NOJUMP
+        --     d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - nojump")
         end
+        -- elseif zoneID == 1027 then
+        --     -- d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - hidden parent "..GetParentZoneId(zoneID).." shards "..GetNumSkyshardsInZone(zoneID))
+        -- end
     end
     return zones
 end
@@ -114,16 +110,16 @@ function WORLD_MAP_LOCATIONS:UpdateLocationList()
                 noJump = true
             end
         else
-            d("AutoRecruit: zoneId "..zoneId.." '"..zoneName.."' not in zones")
+            -- d("AutoRecruit: zoneId "..zoneId.." '"..zoneName.."' not in zones")
         end
 		tex:SetHidden(hidden)
         local r, g, b = ZO_TOOLTIP_DEFAULT_COLOR:UnpackRGB()
         if inCooldown then
             tex:SetTexture("esoui/art/miscellaneous/check.dds")
-            tex:SetColor(r, g, b, 1)
+            tex:SetColor(1,0.7,0.7, 1)
             tex.info = "Recruitment in cooldown"
         elseif noJump then
-            tex:SetColor(1,1,1, 0.5)
+            tex:SetColor(1,1,1, 1)
             tex:SetTexture("esoui/art/chatwindow/chat_notification_disabled.dds")
             tex.info = "No friend to jump to"
         else
