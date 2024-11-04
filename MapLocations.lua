@@ -84,12 +84,18 @@ function WORLD_MAP_LOCATIONS:UpdateLocationList()
         --d("AutoRecruit: map '"..data.locationName.."' -> zone "..zoneIndex.." '"..zoneName.."'")
 
         --d(data.dataEntry.control:GetChild(1))
-        local label = data.dataEntry.control:GetChild(1)
-        local tex = label:GetChild(1)
+        local row = data.dataEntry.control
+        local label = row:GetChild(1)
+        local tex = row:GetChild(2)
         if label and tex == nil then
-            tex = WINDOW_MANAGER:CreateControl("$(parent)Sent", label, CT_TEXTURE)
+            tex = WINDOW_MANAGER:CreateControl("$(parent)Sent", row, CT_TEXTURE)
             tex:SetAnchor(TOPLEFT,label,TOPRIGHT,0,0)
             tex:SetDimensions(26,26)
+
+            tex:SetDrawLayer(DL_CONTROLS)
+            tex:SetMouseEnabled(true)
+            tex:SetHandler("OnMouseEnter", function(control) ZO_Tooltips_ShowTextTooltip(control, BOTTOM, control.info) end )
+            tex:SetHandler("OnMouseExit", function(control) ZO_Tooltips_HideTextTooltip() end )
 		end
 		local hidden = true
         local inCooldown = false
