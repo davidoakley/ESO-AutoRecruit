@@ -33,7 +33,7 @@ local function hasFriendInZone(zoneId)
 end
 
 local function getZoneStates()
-    AR.getZones()
+    -- AR.getZones()
     local zones = {}
     for i=1, #AR.zones do
         local zoneID = AR.zones[i] --GetZoneId(i)
@@ -192,9 +192,11 @@ end
 
 function AR.MapLocationsStateChange(oldState, newState)
 	if newState == SCENE_SHOWING then
+        -- d("AutoRecruit.MapLocationsStateChange: SCENE_SHOWING")
 		rebuildMapLocationsList()
-	elseif newState == SCENE_SHOWN then
-		rebuildMapLocationsList()
+	-- elseif newState == SCENE_SHOWN then
+    --     d("AutoRecruit.MapLocationsStateChange: SCENE_SHOWN")
+	-- 	rebuildMapLocationsList()
 		-- PushActionLayerByName(GetString(SI_KEYBINDINGS_LAYER_VOTANS_IMPROVED_LOCATIONS))
 		-- addon:InitializeKeybindDescriptors()
 		-- KEYBIND_STRIP:AddKeybindButtonGroup(addon.keybindStripDescriptor)
