@@ -43,6 +43,7 @@ AR.defaults = {
     welcomeText = {"", "", "", "", ""},
     welcomeCooldown = {30, 30, 30, 30, 30},
     adCooldown = {15, 15, 15, 15, 15},
+	minSkyshards = 15
 }
 
 
@@ -204,7 +205,7 @@ AR.defaults = {
 	function AR.getZones()
 		for i=1, GetNumZones() do
 			local zoneID = GetZoneId(i)
-			if GetZoneId(i) == GetParentZoneId(zoneID) and GetNumSkyshardsInZone(zoneID)>=15 and zoneID~=181 and CanJumpToPlayerInZone(zoneID) then
+			if GetZoneId(i) == GetParentZoneId(zoneID) and GetNumSkyshardsInZone(zoneID)>=AR.settings.minSkyshards and zoneID~=181 and zoneID~=584 and CanJumpToPlayerInZone(zoneID) then
 			  table.insert(AR.zones, zoneID)
 			end
 		end

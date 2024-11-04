@@ -311,6 +311,21 @@ function AR.MakeMenu()
             default = AR.defaults.portingTime,
         },
 
+        {
+            type = "slider",
+            name = "Minimum zone skyshards",
+            tooltip = "Only port to zones with at least this many skyshards",
+            min = 0,
+            max = 15,
+            step = 1,
+            getFunc = function() return AR.settings.minSkyshards end,
+            setFunc = function(value)
+                AR.settings.minSkyshards = value
+                AR.getZones()
+                end,
+            width = "full",
+            default = AR.defaults.minSkyshards,
+        },
   }
 
 
