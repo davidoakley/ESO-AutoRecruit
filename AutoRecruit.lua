@@ -291,6 +291,9 @@ function AR.Initialize(event, addon)
   em:RegisterForEvent("AutoRecruitStart", EVENT_ACTION_LAYER_POPPED, AR.chatMessage)
   em:RegisterForEvent("AutoRecruitInfo", EVENT_GUILD_MEMBER_ADDED, AR.memberAdded)
 
+  em:RegisterForEvent("AutoRecruitStartFastTravel", EVENT_START_FAST_TRAVEL_INTERACTION, AR.onStartFastTravel)
+  em:RegisterForEvent("AutoRecruitEndFastTravel", EVENT_END_FAST_TRAVEL_INTERACTION, AR.onEndFastTravel)
+
   LibCustomMenu:RegisterPlayerContextMenu(AR.context)
 
   WORLD_MAP_LOCATIONS_FRAGMENT:RegisterCallback("StateChange", AR.MapLocationsStateChange)
@@ -312,6 +315,8 @@ function AR.afterPort(destination)
 		end
 
 		if AR.status == 1 and AR.settings.portMode == "Full-auto" then AR.start() end
+	else
+		d("AR.afterPort: player "..GetUnitWorldPosition("player").." dest "..destination)
 	end
 end
 
