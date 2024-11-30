@@ -240,7 +240,32 @@ AR.defaults = {
     end
   end
 
-
+  function AR.getHouses()
+    AR.zoneHouses = {}
+    local function IsHousingCat(categoryData)
+      return categoryData:IsHousingCategory()
+    end
+  
+    local function IsHouseCollectible(collectibleData)
+      return collectibleData:IsCategoryType(COLLECTIBLE_CATEGORY_TYPE_HOUSE)
+    end
+  
+    for i, categoryData in ZO_COLLECTIBLE_DATA_MANAGER:CategoryIterator({IsHousingCat}) do
+      for j, subCategoryData in categoryData:SubcategoryIterator({IsHousingCat}) do
+        for k, subCatCollectibleData in subCategoryData:CollectibleIterator({IsHouseCollectible}) do
+          if subCatCollectibleData:IsUnlocked() and not subCatCollectibleData:IsBlocked() then
+            local houseID = subCatCollectibleData:GetReferenceId()
+            local zoneID = GetHouseFoundInZoneId(houseID)
+            if AR.zoneHouses[zoneID] == nil then
+              local name, _, _, _, _, _, _, _, _ = GetCollectibleInfo(subCatCollectibleData:GetId())
+              AR.zoneHouses[zoneID] = { houseID, name }
+            end
+          end
+        end
+      end
+    end
+  end
+  
   function AutoRecruitKeybind.start()
   	AR.status = 1
   	AR.start()
@@ -358,6 +383,7 @@ function AR.start()
   end
 
   AR.getOnlinePlayers()
+  AR.getHouses()
   local nextZoneName = GetZoneNameById(AR.zones[AR.nextZone])
   local guild = AR.getGuildIndex(AR.getIDfromName(AR.settings.recruitFor))
   local ownZone = GetUnitWorldPosition("player")
@@ -402,14 +428,24 @@ function AR.start()
     		  end
     		end
     	end, 10000)
-  		break
-  		
-  	 elseif i==#AR.onlinePlayers then
-  	 	d("|c6C00FFAuto Port - |cFFFFFFNo player found in " .. nextZoneName .. ". Skipping this zone...")
-  		AR.nextZone = AR.nextZone + 1
-  		AR.start()
+  		return
   	end
   end
+
+  local houseId = AR.zoneHouses[AR.zones[AR.nextZone]] --AR.HM:GetHouseIDFromZoneID(AR.zones[AR.nextZone])
+	if houseId and CanJumpToHouseFromCurrentLocation() then
+		local houseZone = AR.zones[AR.nextZone]
+    local houseID, houseName = unpack(AR.zoneHouses[houseZone])
+		d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. houseName .. " in " .. nextZoneName)
+		AR.nextZone = AR.nextZone + 1
+		zo_callLater(function() RequestJumpToHouse(houseID, true) end, 100)
+		em:RegisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED, function() AR.afterPort(houseZone) end)
+		return
+	end
+
+  d("|c6C00FFAuto Port - |cFFFFFFCould not port to " .. nextZoneName .. ". Skipping this zone...")
+  AR.nextZone = AR.nextZone + 1
+  AR.start()
 end
 
 
