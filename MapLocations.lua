@@ -1,7 +1,7 @@
 if AutoRecruit == nil then AutoRecruit = {} end
 local AR = AutoRecruit
 local em = EVENT_MANAGER
-local isRecall = true
+local atWayshrine = false
 
 local function tableContains(table, value)
     for i = 1,#table do
@@ -14,11 +14,11 @@ local function tableContains(table, value)
 end
 
 function AR.onStartFastTravel(eventCode, nodeIndex)
-    isRecall = false
+    atWayshrine = true
 end
 
 function AR.onEndFastTravel()
-    isRecall = true
+    atWayshrine = false
 end
   
 local ZONESTATE_HIDDEN = 0
@@ -75,8 +75,8 @@ local function showWayshrineConfirm(name, nodeIndex)
 	ZO_Dialogs_ReleaseDialog("FAST_TRAVEL_CONFIRM")
 	ZO_Dialogs_ReleaseDialog("RECALL_CONFIRM")
 	-- name = name or select(2, MapSearch.Wayshrine.Data.GetNodeInfo(nodeIndex)) -- just in case
-	local id = (isRecall == true and "RECALL_CONFIRM") or "FAST_TRAVEL_CONFIRM"
-	if isRecall == true then
+	local id = (atWayshrine == false and "RECALL_CONFIRM") or "FAST_TRAVEL_CONFIRM"
+	if atWayshrine == false then
 		local _, timeLeft = GetRecallCooldown()
 		if timeLeft ~= 0 then
 			local text = zo_strformat(SI_FAST_TRAVEL_RECALL_COOLDOWN, name, ZO_FormatTimeMilliseconds(timeLeft, TIME_FORMAT_STYLE_DESCRIPTIVE, TIME_FORMAT_PRECISION_SECONDS))
@@ -87,7 +87,38 @@ local function showWayshrineConfirm(name, nodeIndex)
 	ZO_Dialogs_ShowPlatformDialog(id, {nodeIndex = nodeIndex}, {mainTextParams = {name}})
 end
 
+local function jumpToWayshrineInZoneId(zoneId, zoneName)
+    local mapIndex = GetMapIndexByZoneId(zoneId)
+    -- d("AutoRecruit: nextZone "..zoneId.." mapIndex "..mapIndex)
+    ZO_WorldMap_SetMapByIndex(mapIndex)
+
+    local totalNodes = GetNumFastTravelNodes()
+    local i = 1
+    while i <= totalNodes do
+        local known, name, Xcord, Ycord, icon, glowIcon, typePOI, onMap, isLocked = GetFastTravelNodeInfo(i)
+        if typePOI == 1 and not isLocked and onMap and known then
+            -- d("Node: "..i)
+            d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. name .. " in " .. zoneName.." node "..i)
+            -- d(GetFastTravelNodeInfo(i))
+            showWayshrineConfirm(name, i)
+            -- zo_callLater(function() FastTravelToNode(zoneId) end, 100)
+            EVENT_MANAGER:RegisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED, function() AR.afterPort(zoneId) end)
+            --SCENE_MANAGER:Hide("worldMap")
+            return true
+        end
+        i = i + 1
+    end
+
+    return false
+end
+
 local function onLocationIconPressed(btn)
+    if atWayshrine then
+        if jumpToWayshrineInZoneId(btn.zoneId, btn.zoneName) then
+            return
+        end
+    end
+
     if btn.state == ZONESTATE_HOUSE then
         local houseId = AR.HM:GetHouseIDFromZoneID(btn.zoneId)
         if houseId and CanJumpToHouseFromCurrentLocation() then
@@ -112,27 +143,7 @@ local function onLocationIconPressed(btn)
             end
         end
     else
-        local mapIndex = GetMapIndexByZoneId(btn.zoneId)
-        -- d("AutoRecruit: nextZone "..zoneId.." mapIndex "..mapIndex)
-        ZO_WorldMap_SetMapByIndex(mapIndex)
-
-        local totalNodes = GetNumFastTravelNodes()
-        local i = 1
-        while i <= totalNodes do
-            local known, name, Xcord, Ycord, icon, glowIcon, typePOI, onMap, isLocked = GetFastTravelNodeInfo(i)
-            if typePOI == 1 and not isLocked and onMap and known then
-                -- d("Node: "..i)
-                d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. name .. " in " .. btn.zoneName.." node "..i)
-                -- d(GetFastTravelNodeInfo(i))
-                showWayshrineConfirm(name, i)
-                -- zo_callLater(function() FastTravelToNode(zoneId) end, 100)
-                EVENT_MANAGER:RegisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED, function() AR.afterPort(btn.zoneId) end)
-                --SCENE_MANAGER:Hide("worldMap")
-                return
-            end
-            i = i + 1
-        end
-    
+        jumpToWayshrineInZoneId(btn.zoneId, btn.zoneName)
     end
 end
 
@@ -202,7 +213,7 @@ function WORLD_MAP_LOCATIONS:UpdateLocationList()
                 elseif zoneStates[zoneId] == ZONESTATE_NOJUMP then
                     btn:SetNormalFontColor(1,1,1, 1)
                     btn:SetNormalTexture("esoui/art/chatwindow/chat_notification_disabled.dds")
-                    btn.info = "No friend to jump to"
+                    btn.info = "Port to wayshrine"
                 elseif zoneStates[zoneId] == ZONESTATE_HOUSE then
                     btn:SetNormalFontColor(1,0.9,0.7, 1)
                     btn:SetNormalTexture("esoui/art/chatwindow/chat_notification_up.dds")
