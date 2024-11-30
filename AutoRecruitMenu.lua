@@ -336,6 +336,18 @@ function AR.MakeMenu()
     }
   )
 
+  table.insert(optionsTable,
+    {
+        type = "checkbox",
+        name = "Save last posted times",
+        tooltip = "Store last posted times so that cooldowns survive /reloadui or a game restart",
+        getFunc = function() return AR.settings.saveLastPosted end,
+        setFunc = function(value) AR.settings.saveLastPosted = value end,
+        width = "full",
+        default = AR.defaults.keepPorting,
+        requiresReload = true, -- boolean, if set to true, the warning text will contain a notice that changes are only applied after an UI reload and any change to the value will make the "Apply Settings" button appear on the panel which will reload the UI when pressed (optional)
+    }
+  )
 
   local menu = LibAddonMenu2
   menu:RegisterAddonPanel("Auto_Recruit", panelData)

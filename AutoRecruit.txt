@@ -3,7 +3,7 @@
 ## Author: |c6C00FFpeniku8|r
 ## Version: 3.0.5
 ## APIVersion: 101042
-## SavedVariables: AutoRecruitSavedVars
+## SavedVariables: AutoRecruitSavedVars AutoRecruitLastPosted
 ## DependsOn: LibAddonMenu-2.0>=28 LibCustomMenu>=692
 
 AutoRecruit.lua
