@@ -35,6 +35,7 @@ AR.defaults = {
     keepPorting = false,
     portingTime = 15,
     skipZoneOnCD = true,
+    includedZones = "Major",
 
     guild1 = false,
     ad = {"", "", "", "", ""},
@@ -201,14 +202,21 @@ AR.defaults = {
   end
 
 
-	function AR.getZones()
-		for i=1, GetNumZones() do
-			local zoneID = GetZoneId(i)
-			if GetZoneId(i) == GetParentZoneId(zoneID) and GetNumSkyshardsInZone(zoneID)>=15 and zoneID~=181 and CanJumpToPlayerInZone(zoneID) then
-			  table.insert(AR.zones, zoneID)
-			end
-		end
-	end
+  function AR.getZones()
+    local minSkyshards = (AR.settings.includedZones == "All") and 0 or 15
+
+    for i = 1, GetNumMaps() do
+      local _, _, _, zoneIndex, _ = GetMapInfoByIndex(i)
+      local zoneID = GetZoneId(zoneIndex)
+	  -- Include parent zones, plus Apocrypha, Arteum and the Brass Fortress;
+	  -- remove "Clean Test", Cyrodiil and Imperial City
+      if (zoneID == GetParentZoneId(zoneID) or zoneID==981 or zoneID==1413 or zoneID==1027) and
+          GetNumSkyshardsInZone(zoneID)>=minSkyshards and
+          zoneID~=181 and zoneID~=584 and zoneID~=2 and CanJumpToPlayerInZone(zoneID) then
+        table.insert(AR.zones, zoneID)
+      end
+    end
+  end
 
 
   function AR.getOnlinePlayers()
