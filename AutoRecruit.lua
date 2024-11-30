@@ -273,6 +273,7 @@ function AR.Initialize(event, addon)
 	em:UnregisterForEvent("AutoRecruitInitialize", EVENT_ADD_ON_LOADED)
 
 	AR.settings = ZO_SavedVars:NewAccountWide("AutoRecruitSavedVars", 1, nil, AR.defaults)
+	AR.lastPosted = ZO_SavedVars:NewAccountWide("AutoRecruitLastPosted", 1, nil, {})
 
 	ZO_CreateStringId("SI_BINDING_NAME_AUTO_RECRUIT_PASTE1", "Paste " .. GetGuildName(GetGuildId(1)) .. "'s Ad")
 	ZO_CreateStringId("SI_BINDING_NAME_AUTO_RECRUIT_PASTE2", "Paste " .. GetGuildName(GetGuildId(2)) .. "'s Ad")
