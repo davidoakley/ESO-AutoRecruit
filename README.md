@@ -43,3 +43,9 @@ The addon can paste recruitment ads via hotkeys, automatically invite players to
 
 - LibAddonMenu-2.0
 - LibCustomMenu
+
+## Changes in this repository
+
+- Will now port to a player house if no guild members or friends are available in a zone
+- Added a Setting to choose between porting to major zones and all overland zones
+- Added a Setting to store the 'last ported' time for each zone in Saved Preferences, so that it survives a `/reloadui` or a game restart.
