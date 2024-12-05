@@ -302,6 +302,7 @@ function AR.Initialize(event, addon)
 
 	AR.MakeMenu()
 	AR.getZones()
+	AR.getHouses()
 	AR.initializeMapTab()
 
 	em:RegisterForEvent("AutoRecruitStart", EVENT_PLAYER_ACTIVATED, function(...) AR.RefreshWindow(...) end)

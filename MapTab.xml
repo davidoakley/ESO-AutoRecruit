@@ -10,17 +10,43 @@
 			</OnInitialized>
             <Dimensions x="25" y="40"/>
             <Controls>
-				<Label name="$(parent)Label" inherits="ZO_SelectableLabel" font="ZoFontHeader2" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" modifyTextType="UPPERCASE">
+				<Label name="$(parent)Label" inherits="ZO_SelectableLabel" font="ZoFontHeader2" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" modifyTextType="UPPERCASE" mouseEnabled="false">
 					<Anchor point="TOPLEFT" offsetX="0" offsetY="14" />
 				</Label>
+            </Controls>
+        </Control>
+
+        <Control name="AutoRecruit_WorldMapZoneRow" virtual="true">
+			<OnInitialized>
+				self.offsetX = 30
+				self.label = self:GetNamedChild("Label")
+				self.icon = self:GetNamedChild("Icon")
+				self.icon:SetDrawLayer(self.label:GetDrawLayer() + 1)
+			</OnInitialized>
+            <Dimensions x="285" y="23"/>
+            <Controls>
+				<Texture name="$(parent)Icon" textureFile="EsoUI/Art/Quest/questJournal_trackedQuest_icon.dds" hidden="false" mouseEnabled="true">
+					<Dimensions x="23" y="23"/>
+					<Anchor point="TOPLEFT" offsetX="0" offsetY="0" />
+					<TextureCoords top="0" bottom="1" left="0" right="1"/>
+					<OnMouseUp>
+						MapSearch.RowMouseUp(self,button, upInside)
+					</OnMouseUp>
+				</Texture>
+				<Label name="$(parent)Label" inherits="ZO_SelectableLabel" font="ZoFontHeader" newLineIndent="8">
+					<Anchor point="TOPLEFT" offsetX="30" />
+					<OnMouseUp>
+						--self:GetParent():RowMouseUp(button, upInside)
+						MapSearch.RowMouseUp(self, button, upInside)
+					</OnMouseUp>
+				</Label>
+
             </Controls>
         </Control>
 
         <TopLevelControl name="AutoRecruit_WorldMapTab" inherits="ZO_WorldMapInfoContent">
             <OnInitialized>
                 self.list = self:GetNamedChild("List")
-				self.fragment = ZO_FadeSceneFragment:New(self)
-				self.fragment.duration = 100
 	        </OnInitialized>
             <Controls>
                 <Control name="$(parent)List" inherits="ZO_ScrollList">
