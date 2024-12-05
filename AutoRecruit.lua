@@ -298,9 +298,11 @@ function AR.Initialize(event, addon)
 	ZO_CreateStringId("SI_BINDING_NAME_AUTO_RECRUIT_PASTE5", "Paste " .. GetGuildName(GetGuildId(5)) .. "'s Ad")
 	ZO_CreateStringId("SI_BINDING_NAME_AUTO_RECRUIT_STARTPORT", "Start porting")
 	ZO_CreateStringId("SI_BINDING_NAME_AUTO_RECRUIT_STOPPORT", "Stop porting")
+	ZO_CreateStringId("AUTO_RECRUIT_MAPTAB","Auto Recruit")
 
 	AR.MakeMenu()
 	AR.getZones()
+	AR.initializeMapTab()
 
 	em:RegisterForEvent("AutoRecruitStart", EVENT_PLAYER_ACTIVATED, function(...) AR.RefreshWindow(...) end)
   em:RegisterForEvent("AutoRecruitStart", EVENT_CHAT_MESSAGE_CHANNEL, AR.chatMessage)

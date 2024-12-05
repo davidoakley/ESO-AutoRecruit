@@ -9,4 +9,6 @@
 AutoRecruit.lua
 AutoRecruitMenu.lua
 AutoRecruitWindow.lua
+AutoRecruitMapTab.lua
 bindings.xml
+MapTab.xml
