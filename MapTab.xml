@@ -30,14 +30,13 @@
 					<Anchor point="TOPLEFT" offsetX="0" offsetY="0" />
 					<TextureCoords top="0" bottom="1" left="0" right="1"/>
 					<OnMouseUp>
-						MapSearch.RowMouseUp(self,button, upInside)
+						AutoRecruitRowMouseUp(self, button, upInside)
 					</OnMouseUp>
 				</Texture>
 				<Label name="$(parent)Label" inherits="ZO_SelectableLabel" font="ZoFontHeader" newLineIndent="8">
 					<Anchor point="TOPLEFT" offsetX="30" />
 					<OnMouseUp>
-						--self:GetParent():RowMouseUp(button, upInside)
-						MapSearch.RowMouseUp(self, button, upInside)
+						AutoRecruitRowMouseUp(self, button, upInside)
 					</OnMouseUp>
 				</Label>
 

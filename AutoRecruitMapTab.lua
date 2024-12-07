@@ -7,6 +7,61 @@ local ZONESTATE_FRIEND = 2
 local ZONESTATE_HOUSE = 3
 local ZONESTATE_COOLDOWN = 4
 
+local atWayshrine = false
+
+-- city: /esoui/art/icons/poi/poi_city_complete.dds
+-- town: /esoui/art/icons/poi/poi_town_complete.dds
+
+local function OnStartFastTravel(eventCode, nodeIndex)
+	atWayshrine = true
+end
+
+local function OnEndFastTravel()
+	atWayshrine = false
+end
+
+local function showWayshrineConfirm(name, nodeIndex)
+	-- local nodeIndex,name,refresh,clicked = data.nodeIndex,data.name,data.refresh,data.clicked
+	ZO_Dialogs_ReleaseDialog("FAST_TRAVEL_CONFIRM")
+	ZO_Dialogs_ReleaseDialog("RECALL_CONFIRM")
+	-- name = name or select(2, MapSearch.Wayshrine.Data.GetNodeInfo(nodeIndex)) -- just in case
+	local id = (atWayshrine == false and "RECALL_CONFIRM") or "FAST_TRAVEL_CONFIRM"
+	if atWayshrine == false then
+		local _, timeLeft = GetRecallCooldown()
+		if timeLeft ~= 0 then
+			local text = zo_strformat(SI_FAST_TRAVEL_RECALL_COOLDOWN, name, ZO_FormatTimeMilliseconds(timeLeft, TIME_FORMAT_STYLE_DESCRIPTIVE, TIME_FORMAT_PRECISION_SECONDS))
+		    ZO_Alert(UI_ALERT_CATEGORY_ERROR, SOUNDS.NEGATIVE_CLICK, text)
+			return
+		end
+	end
+	ZO_Dialogs_ShowPlatformDialog(id, {nodeIndex = nodeIndex}, {mainTextParams = {name}})
+end
+
+local function jumpToWayshrineInZoneId(zoneId, zoneName)
+    local mapIndex = GetMapIndexByZoneId(zoneId)
+    -- d("AutoRecruit: nextZone "..zoneId.." mapIndex "..mapIndex)
+    ZO_WorldMap_SetMapByIndex(mapIndex)
+
+    local totalNodes = GetNumFastTravelNodes()
+    local i = 1
+    while i <= totalNodes do
+        local known, name, Xcord, Ycord, icon, glowIcon, typePOI, onMap, isLocked = GetFastTravelNodeInfo(i)
+        if typePOI == 1 and not isLocked and onMap and known then
+            -- d("Node: "..i)
+            d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. name .. " in " .. zoneName.." node "..i)
+            -- d(GetFastTravelNodeInfo(i))
+            showWayshrineConfirm(name, i)
+            -- zo_callLater(function() FastTravelToNode(zoneId) end, 100)
+            EVENT_MANAGER:RegisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED, function() AR.afterPort(zoneId) end)
+            --SCENE_MANAGER:Hide("worldMap")
+            return true
+        end
+        i = i + 1
+    end
+
+    return false
+end
+
 local function hasFriendInZone(zoneId)
 	AR.getOnlinePlayers()
 	local ownZone = GetUnitWorldPosition("player")
@@ -24,7 +79,6 @@ local function hasFriendInZone(zoneId)
 end
 
 local function getZoneStates(guild)
-	-- AR.getZones()
 	local zones = {}
 	local timestamp = GetTimeStamp()
 	local cooldown = AR.settings.adCooldown[guild]*60
@@ -33,27 +87,34 @@ local function getZoneStates(guild)
 		local zoneName = GetZoneNameById(zoneID)
 
 		local lastPosted = AR.lastPosted[zoneName]
-		--if lastPosted then d(" - "..zoneName.." "..(timestamp - lastPosted)) end
 		if lastPosted and cooldown-(timestamp-lastPosted) > 10 then
 			zones[zoneID] = ZONESTATE_COOLDOWN
 		else
 			local houseId = AR.zoneHouses[zoneID]
 			if houseId and CanJumpToHouseFromCurrentLocation() then
-				-- d("|c6C00FFAuto Port - |cFFFFFF " .. AR.HM:GetName(houseId) .. " in " .. GetZoneNameById(zoneID))
 				zones[zoneID] = ZONESTATE_HOUSE
 			elseif hasFriendInZone(zoneID) then
 				zones[zoneID] = ZONESTATE_FRIEND
-				--d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - available")
 			else
 				zones[zoneID] = ZONESTATE_NOJUMP
-				--d("Zone ID "..zoneID..": "..GetZoneNameById(zoneID).." - nojump")
 			end
 		end
 	end
 	return zones
 end
 
-local function OnRowSelect()
+function AutoRecruitRowMouseUp(control, mouseButton, upInside)
+	if(upInside) then
+		local data = ZO_ScrollList_GetData(control:GetParent())
+		--MapSearch.clickedData = data
+		-- ShowWayshrineConfirm(data, MapSearch.isRecall)
+		jumpToWayshrineInZoneId(data.zoneId, data.text)
+		-- if data.clicked then
+		-- 	data:clicked(control,button)
+		-- 	-- self:RowMouseClicked(control,data,button)
+		-- 	logger:Info("Row Mouse Up clicked? "..data.clicked)
+		-- end
+	end
 end
 
 local function LayoutCategoryRow(rowControl, data, scrollList)
@@ -98,6 +159,7 @@ function AR.rebuildMapTabList()
 					local zoneName = GetZoneNameById(zoneId)
 
 					local entry = ZO_ScrollList_CreateDataEntry(1, {
+							zoneId = zoneId,
 							text = zoneName,
 							icon = "/esoui/art/tutorial/poi_wayshrine_complete.dds",
 							state = zoneStates[zoneId]
@@ -118,6 +180,7 @@ function AR.rebuildMapTabList()
 							local zoneName = GetZoneNameById(zoneId)
 
 							local entry = ZO_ScrollList_CreateDataEntry(1, {
+									zoneId = zoneId,
 									text = zoneName,
 									icon = "esoui/art/miscellaneous/check.dds",
 									state = zoneStates[zoneId]
@@ -148,7 +211,7 @@ function AR.initializeMapTab()
 	local scrollList = AutoRecruit_WorldMapTabList
 	ZO_ScrollList_AddDataType(scrollList, 0, "AutoRecruit_WorldMapCategoryRow", 40, LayoutCategoryRow, nil, nil, nil)
 	ZO_ScrollList_AddDataType(scrollList, 1, "AutoRecruit_WorldMapZoneRow", 23, LayoutZoneRow, nil, nil, nil)
-	ZO_ScrollList_EnableSelection(scrollList, "ZO_ThinListHighlight", OnRowSelect)
+	-- ZO_ScrollList_EnableSelection(scrollList, "ZO_ThinListHighlight", OnRowSelect)
 
 	AR.rebuildMapTabList()
 
@@ -160,5 +223,8 @@ function AR.initializeMapTab()
 		elseif newState == SCENE_HIDDEN then
 			-- KEYBIND_STRIP:RemoveKeybindButtonGroup(ButtonGroup)
 		end
-	end)  
+	end)
+
+	EVENT_MANAGER:RegisterForEvent("AutoRecruitStartFastTravel", EVENT_START_FAST_TRAVEL_INTERACTION, OnStartFastTravel)
+  EVENT_MANAGER:RegisterForEvent("AutoRecruitEndFastTravel", EVENT_END_FAST_TRAVEL_INTERACTION, OnEndFastTravel)
 end
