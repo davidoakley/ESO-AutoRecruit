@@ -5,7 +5,8 @@ local ZONESTATE_HIDDEN = 0
 local ZONESTATE_NOJUMP = 1
 local ZONESTATE_FRIEND = 2
 local ZONESTATE_HOUSE = 3
-local ZONESTATE_COOLDOWN = 4
+local ZONESTATE_WAYSHRINE = 4
+local ZONESTATE_COOLDOWN = -1
 
 local atWayshrine = false
 
@@ -37,29 +38,50 @@ local function showWayshrineConfirm(name, nodeIndex)
 	ZO_Dialogs_ShowPlatformDialog(id, {nodeIndex = nodeIndex}, {mainTextParams = {name}})
 end
 
-local function jumpToWayshrineInZoneId(zoneId, zoneName)
-    local mapIndex = GetMapIndexByZoneId(zoneId)
-    -- d("AutoRecruit: nextZone "..zoneId.." mapIndex "..mapIndex)
-    ZO_WorldMap_SetMapByIndex(mapIndex)
-
-    local totalNodes = GetNumFastTravelNodes()
+local function getZoneWayshrines()
+	local zones = {}
+	local totalNodes = GetNumFastTravelNodes()
     local i = 1
     while i <= totalNodes do
         local known, name, Xcord, Ycord, icon, glowIcon, typePOI, onMap, isLocked = GetFastTravelNodeInfo(i)
-        if typePOI == 1 and not isLocked and onMap and known then
-            -- d("Node: "..i)
-            d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. name .. " in " .. zoneName.." node "..i)
-            -- d(GetFastTravelNodeInfo(i))
-            showWayshrineConfirm(name, i)
-            -- zo_callLater(function() FastTravelToNode(zoneId) end, 100)
-            EVENT_MANAGER:RegisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED, function() AR.afterPort(zoneId) end)
-            --SCENE_MANAGER:Hide("worldMap")
-            return true
+
+		local zoneIndex, _ =  GetFastTravelNodePOIIndicies(i)
+		local nodeZoneId = GetZoneId(zoneIndex)
+
+        if zones[nodeZoneId] == nil and typePOI == 1 and not isLocked and known then
+			-- d('FastTravelNodes: ' .. nodeZoneId .. ': ' .. name)
+			zones[nodeZoneId] = {name, i}
         end
-        i = i + 1
+
+		i = i + 1
     end
 
-    return false
+	return zones
+end
+
+local function jumpToWayshrineInZoneId(zoneId, zoneName)
+	local wayshrines = getZoneWayshrines()
+
+	if wayshrines[zoneId] == nil then
+		return false
+	end
+
+	local name, nodeId = unpack(wayshrines[zoneId])
+
+	d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. name .. " in " .. zoneName)
+	if atWayshrine then
+		zo_callLater(function() FastTravelToNode(nodeId) end, 100)
+	else
+		local mapIndex = GetMapIndexByZoneId(zoneId)
+		ZO_WorldMap_SetMapByIndex(mapIndex)
+		showWayshrineConfirm(name,nodeId)
+	end
+	EVENT_MANAGER:RegisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED, function()
+		AR.afterPort(zoneId)
+		zo_callLater(function() WORLD_MAP_INFO:SelectTab(AUTO_RECRUIT_MAPTAB) end, 100)
+	end)
+
+	return true
 end
 
 local function hasFriendInZone(zoneId)
@@ -78,10 +100,11 @@ local function hasFriendInZone(zoneId)
 	return false
 end
 
-local function getZoneStates(guild)
+local function getZoneStates(guild, preferFastTravel)
 	local zones = {}
 	local timestamp = GetTimeStamp()
 	local cooldown = AR.settings.adCooldown[guild]*60
+	local wayshrines = getZoneWayshrines()
 	for i=1, #AR.zones do
 		local zoneID = AR.zones[i] --GetZoneId(i)
 		local zoneName = GetZoneNameById(zoneID)
@@ -91,10 +114,14 @@ local function getZoneStates(guild)
 			zones[zoneID] = ZONESTATE_COOLDOWN
 		else
 			local houseId = AR.zoneHouses[zoneID]
-			if houseId and CanJumpToHouseFromCurrentLocation() then
+			if preferFastTravel and wayshrines[zoneID] ~= nil then
+				zones[zoneID] = ZONESTATE_WAYSHRINE
+			elseif houseId and CanJumpToHouseFromCurrentLocation() then
 				zones[zoneID] = ZONESTATE_HOUSE
 			elseif hasFriendInZone(zoneID) then
 				zones[zoneID] = ZONESTATE_FRIEND
+			elseif wayshrines[zoneID] ~= nil then
+				zones[zoneID] = ZONESTATE_WAYSHRINE
 			else
 				zones[zoneID] = ZONESTATE_NOJUMP
 			end
@@ -106,14 +133,7 @@ end
 function AutoRecruitRowMouseUp(control, mouseButton, upInside)
 	if(upInside) then
 		local data = ZO_ScrollList_GetData(control:GetParent())
-		--MapSearch.clickedData = data
-		-- ShowWayshrineConfirm(data, MapSearch.isRecall)
 		jumpToWayshrineInZoneId(data.zoneId, data.text)
-		-- if data.clicked then
-		-- 	data:clicked(control,button)
-		-- 	-- self:RowMouseClicked(control,data,button)
-		-- 	logger:Info("Row Mouse Up clicked? "..data.clicked)
-		-- end
 	end
 end
 
@@ -129,12 +149,24 @@ local function LayoutZoneRow(rowControl, data, scrollList)
 	else
 		rowControl.icon:SetHidden(true)
 	end
-	if data.state == ZONESTATE_COOLDOWN then
+	if data.disabled then
 		rowControl.disabled = true
 		rowControl:SetAlpha(0.75)
 		rowControl.label:SetMouseEnabled(false)
 		rowControl.icon:SetMouseEnabled(false)
 		-- rowControl:SetDesaturation(1.0)
+	end
+end
+
+local function getIconForState(state)
+	if state == ZONESTATE_FRIEND then
+		return "/esoui/art/icons/poi/poi_town_complete.dds"
+	elseif state == ZONESTATE_HOUSE then
+		return "/esoui/art/icons/poi/poi_group_house_owned.dds"
+	elseif state == ZONESTATE_NOJUMP then
+		return "/esoui/art/miscellaneous/status_locked.dds"
+	else
+		return "/esoui/art/tutorial/poi_wayshrine_complete.dds"
 	end
 end
 
@@ -154,41 +186,43 @@ function AR.rebuildMapTabList()
 
 	local hasInCooldown = false
 	for i=1, #AR.zones do
-			local zoneId = AR.zones[i]
-			if zoneStates[zoneId] ~= ZONESTATE_COOLDOWN then
-					local zoneName = GetZoneNameById(zoneId)
+		local zoneId = AR.zones[i]
+		local state = zoneStates[zoneId]
+		if state ~= ZONESTATE_COOLDOWN then
+			local zoneName = GetZoneNameById(zoneId)
 
-					local entry = ZO_ScrollList_CreateDataEntry(1, {
-							zoneId = zoneId,
-							text = zoneName,
-							icon = "/esoui/art/tutorial/poi_wayshrine_complete.dds",
-							state = zoneStates[zoneId]
-					})
-					table.insert(scrollData, entry)
-			else
-					hasInCooldown = true
-			end
+			local entry = ZO_ScrollList_CreateDataEntry(1, {
+				zoneId = zoneId,
+				text = zoneName,
+				icon = getIconForState(state),
+				state = state,
+				disabled = (state == ZONESTATE_COOLDOWN or state == ZONESTATE_NOJUMP)
+			})
+			table.insert(scrollData, entry)
+		elseif zoneStates[zoneId] == ZONESTATE_COOLDOWN then
+				hasInCooldown = true
+		end
 	end
 
 	if hasInCooldown then
-			local apEntry = ZO_ScrollList_CreateDataEntry(0, { text = "Zones In Cooldown" })
-			table.insert(scrollData, apEntry)
+		local apEntry = ZO_ScrollList_CreateDataEntry(0, { text = "Zones In Cooldown" })
+		table.insert(scrollData, apEntry)
 
-			for i=1, #AR.zones do
-					local zoneId = AR.zones[i]
-					if zoneStates[zoneId] == ZONESTATE_COOLDOWN then
-							local zoneName = GetZoneNameById(zoneId)
+		for i=1, #AR.zones do
+			local zoneId = AR.zones[i]
+			if zoneStates[zoneId] == ZONESTATE_COOLDOWN then
+				local zoneName = GetZoneNameById(zoneId)
 
-							local entry = ZO_ScrollList_CreateDataEntry(1, {
-									zoneId = zoneId,
-									text = zoneName,
-									icon = "esoui/art/miscellaneous/check.dds",
-									state = zoneStates[zoneId]
-							})
-							table.insert(scrollData, entry)
-					end
+				local entry = ZO_ScrollList_CreateDataEntry(1, {
+					zoneId = zoneId,
+					text = zoneName,
+					icon = "esoui/art/miscellaneous/check.dds",
+					state = zoneStates[zoneId],
+					disabled = true
+				})
+				table.insert(scrollData, entry)
 			end
-
+		end
 	end
 	-- local mEntry = ZO_ScrollList_CreateDataEntry(0, { text = "Manual Zones" })
 	-- table.insert(scrollData, mEntry)
