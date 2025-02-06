@@ -1,6 +1,6 @@
 # Auto Recruit for Elder Scrolls Online<br><span style="font-size: 66%">(SirNightstorm's Edits)</span>
 
-This repository is a copy of [peniku8's **Auto Recruit** ESO AddOn](https://www.esoui.com/downloads/info2571-AutoRecruit.html), with updates to add new functionality. You'll find the latest work in the `dev` branch
+This repository tracks development of [peniku8's **Auto Recruit** ESO Add-on](https://www.esoui.com/downloads/info2571-AutoRecruit.html), with updates to add new functionality. You'll find the latest work in the `dev` branch
 
 ## Original Description
 
