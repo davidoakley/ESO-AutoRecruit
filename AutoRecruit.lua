@@ -204,6 +204,7 @@ AR.defaults = {
 
 
   function AR.getZones()
+	  AR.zones = {}
     local minSkyshards = (AR.settings.includedZones == "All") and 0 or 15
 
     for i = 1, GetNumMaps() do
