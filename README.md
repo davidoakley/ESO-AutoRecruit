@@ -1,6 +1,6 @@
 # Auto Recruit for Elder Scrolls Online<br><span style="font-size: 66%">(SirNightstorm's Edits)</span>
 
-This repository is a copy of [peniku8's **Auto Recruit** ESO AddOn](https://www.esoui.com/downloads/info2571-AutoRecruit.html), with updates to add new functionality. You'll find the latest work in the `dev` branch
+This repository tracks development of [peniku8's **Auto Recruit** ESO Add-on](https://www.esoui.com/downloads/info2571-AutoRecruit.html), with updates to add new functionality. You'll find the latest work in the `dev` branch
 
 ## Original Description
 
@@ -43,3 +43,9 @@ The addon can paste recruitment ads via hotkeys, automatically invite players to
 
 - LibAddonMenu-2.0
 - LibCustomMenu
+
+## Changes in this repository
+
+- Will now port to a player house if no guild members or friends are available in a zone
+- Added a Setting to choose between porting to major zones and all overland zones
+- Added a Setting to store the 'last ported' time for each zone in Saved Preferences, so that it survives a `/reloadui` or a game restart.

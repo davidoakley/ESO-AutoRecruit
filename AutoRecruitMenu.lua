@@ -16,7 +16,7 @@ function AR.MakeMenu()
     		displayName = "Auto Recruit",
     		author = "|c6C00FF@peniku8|r",
         version = AR.version,
-        slashCommand = "/autorecruit",
+        --slashCommand = "/autorecruit",
         registerForRefresh = true,
         registerForDefaults = true,
         website = "https://www.esoui.com/downloads/info2571-AutoRecruit.html",
@@ -268,6 +268,20 @@ function AR.MakeMenu()
             width = "full",
             default = AR.defaults.portMode,
         },
+
+				{
+					type = "dropdown",
+					name = "Included zones:",
+					tooltip = "Major: main base and DLC chapter zones\nAll: all public map zones",
+					choices = {"Major", "All"},
+					getFunc = function() return AR.settings.includedZones end,
+					setFunc = function(value)
+						AR.settings.includedZones = value
+						AR.getZones()
+					end,
+					width = "full",
+					default = AR.defaults.includedZones,
+				},
         
         {
             type = "checkbox",
@@ -309,8 +323,7 @@ function AR.MakeMenu()
             setFunc = function(value) AR.settings.portingTime = value end,
             width = "full",
             default = AR.defaults.portingTime,
-        },
-
+        }
   }
 
 
@@ -323,9 +336,19 @@ function AR.MakeMenu()
     }
   )
 
-
   local menu = LibAddonMenu2
-  menu:RegisterAddonPanel("Auto_Recruit", panelData)
+	local panel = menu:RegisterAddonPanel("Auto_Recruit", panelData)
 	menu:RegisterOptionControls("Auto_Recruit", optionsTable)
 
+	SLASH_COMMANDS["/autorecruit"] = function(extra)
+		if extra == "save 1" then
+			AR.settings.saveLastPosted = true -- Store last posted times so that cooldowns survive /reloadui or a game restart
+			d("Auto Recruit: Save last posted times: enabled")
+		elseif extra == "save 0" then
+			AR.settings.saveLastPosted = false
+			d("Auto Recruit: Save last posted times: disabled")
+		else
+			menu:OpenToPanel(panel)
+		end
+	end
 end

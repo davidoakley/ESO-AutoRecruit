@@ -4,7 +4,7 @@ local em = EVENT_MANAGER
 AutoRecruitKeybind = {}
 
 AR.name = "AutoRecruit"
-AR.version = "3.0.5"
+AR.version = "3.1.0"
 AR.cooldown = {0, 0, 0, 0, 0}
 AR.inviteeID = "@"
 AR.posted = ""
@@ -35,6 +35,8 @@ AR.defaults = {
     keepPorting = false,
     portingTime = 15,
     skipZoneOnCD = true,
+    includedZones = "Major",
+    saveLastPosted = false,
 
     guild1 = false,
     ad = {"", "", "", "", ""},
@@ -110,7 +112,7 @@ AR.defaults = {
     		AR.settings.recruitFor = GetGuildName(GetGuildId(guild))
   	  end
   	 else
-  		d("|c6C00FFAuto Recruit - |cFF8174You have not specified a recruitement message for " .. GetGuildName(GetGuildId(guild)) .. " yet.")
+		d("|c6C00FFAuto Recruit - |cFF8174You have not specified a recruitment message for " .. GetGuildName(GetGuildId(guild)) .. " yet.")
   	end
   end
 
@@ -201,14 +203,22 @@ AR.defaults = {
   end
 
 
-	function AR.getZones()
-		for i=1, GetNumZones() do
-			local zoneID = GetZoneId(i)
-			if GetZoneId(i) == GetParentZoneId(zoneID) and GetNumSkyshardsInZone(zoneID)>=15 and zoneID~=181 and CanJumpToPlayerInZone(zoneID) then
-			  table.insert(AR.zones, zoneID)
-			end
-		end
-	end
+  function AR.getZones()
+	  AR.zones = {}
+    local minSkyshards = (AR.settings.includedZones == "All") and 0 or 15
+
+    for i = 1, GetNumMaps() do
+      local _, _, _, zoneIndex, _ = GetMapInfoByIndex(i)
+      local zoneID = GetZoneId(zoneIndex)
+	  -- Include parent zones, plus Apocrypha, Arteum and the Brass Fortress;
+	  -- remove "Clean Test", Cyrodiil and Imperial City
+      if (zoneID == GetParentZoneId(zoneID) or zoneID==981 or zoneID==1413 or zoneID==1027) and
+          GetNumSkyshardsInZone(zoneID)>=minSkyshards and
+          zoneID~=181 and zoneID~=584 and zoneID~=2 and CanJumpToPlayerInZone(zoneID) then
+        table.insert(AR.zones, zoneID)
+      end
+    end
+  end
 
 
   function AR.getOnlinePlayers()
@@ -231,7 +241,32 @@ AR.defaults = {
     end
   end
 
-
+  function AR.getHouses()
+    AR.zoneHouses = {}
+    local function IsHousingCat(categoryData)
+      return categoryData:IsHousingCategory()
+    end
+  
+    local function IsHouseCollectible(collectibleData)
+      return collectibleData:IsCategoryType(COLLECTIBLE_CATEGORY_TYPE_HOUSE)
+    end
+  
+    for i, categoryData in ZO_COLLECTIBLE_DATA_MANAGER:CategoryIterator({IsHousingCat}) do
+      for j, subCategoryData in categoryData:SubcategoryIterator({IsHousingCat}) do
+        for k, subCatCollectibleData in subCategoryData:CollectibleIterator({IsHouseCollectible}) do
+          if subCatCollectibleData:IsUnlocked() and not subCatCollectibleData:IsBlocked() then
+            local houseID = subCatCollectibleData:GetReferenceId()
+            local zoneID = GetHouseFoundInZoneId(houseID)
+            if AR.zoneHouses[zoneID] == nil then
+              local name, _, _, _, _, _, _, _, _ = GetCollectibleInfo(subCatCollectibleData:GetId())
+              AR.zoneHouses[zoneID] = { houseID, name }
+            end
+          end
+        end
+      end
+    end
+  end
+  
   function AutoRecruitKeybind.start()
   	AR.status = 1
   	AR.start()
@@ -253,6 +288,9 @@ function AR.Initialize(event, addon)
 	em:UnregisterForEvent("AutoRecruitInitialize", EVENT_ADD_ON_LOADED)
 
 	AR.settings = ZO_SavedVars:NewAccountWide("AutoRecruitSavedVars", 1, nil, AR.defaults)
+  if AR.settings.saveLastPosted then
+    AR.lastPosted = ZO_SavedVars:NewAccountWide("AutoRecruitLastPosted", 1, nil, {})
+  end
 
 	ZO_CreateStringId("SI_BINDING_NAME_AUTO_RECRUIT_PASTE1", "Paste " .. GetGuildName(GetGuildId(1)) .. "'s Ad")
 	ZO_CreateStringId("SI_BINDING_NAME_AUTO_RECRUIT_PASTE2", "Paste " .. GetGuildName(GetGuildId(2)) .. "'s Ad")
@@ -346,6 +384,7 @@ function AR.start()
   end
 
   AR.getOnlinePlayers()
+  AR.getHouses()
   local nextZoneName = GetZoneNameById(AR.zones[AR.nextZone])
   local guild = AR.getGuildIndex(AR.getIDfromName(AR.settings.recruitFor))
   local ownZone = GetUnitWorldPosition("player")
@@ -390,14 +429,24 @@ function AR.start()
     		  end
     		end
     	end, 10000)
-  		break
-  		
-  	 elseif i==#AR.onlinePlayers then
-  	 	d("|c6C00FFAuto Port - |cFFFFFFNo player found in " .. nextZoneName .. ". Skipping this zone...")
-  		AR.nextZone = AR.nextZone + 1
-  		AR.start()
+  		return
   	end
   end
+
+  local houseId = AR.zoneHouses[AR.zones[AR.nextZone]] --AR.HM:GetHouseIDFromZoneID(AR.zones[AR.nextZone])
+	if houseId and CanJumpToHouseFromCurrentLocation() then
+		local houseZone = AR.zones[AR.nextZone]
+    local houseID, houseName = unpack(AR.zoneHouses[houseZone])
+		d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. houseName .. " in " .. nextZoneName)
+		AR.nextZone = AR.nextZone + 1
+		zo_callLater(function() RequestJumpToHouse(houseID, true) end, 100)
+		em:RegisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED, function() AR.afterPort(houseZone) end)
+		return
+	end
+
+  d("|c6C00FFAuto Port - |cFFFFFFCould not port to " .. nextZoneName .. ". Skipping this zone...")
+  AR.nextZone = AR.nextZone + 1
+  AR.start()
 end
 
 

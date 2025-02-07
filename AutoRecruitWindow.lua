@@ -5,7 +5,7 @@ local AR = AutoRecruit
 
 
 function AR.MakeWindow()
-	AR.window = wm:CreateTopLevelWindow("AutoRecruit")
+	AR.window = wm:CreateTopLevelWindow("ARWindow")
 	local ar = AR.window
 	ar:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, AR.settings.x, AR.settings.y)
 	ar:SetMovable(true)
