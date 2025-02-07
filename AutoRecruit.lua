@@ -112,7 +112,7 @@ AR.defaults = {
     		AR.settings.recruitFor = GetGuildName(GetGuildId(guild))
   	  end
   	 else
-  		d("|c6C00FFAuto Recruit - |cFF8174You have not specified a recruitement message for " .. GetGuildName(GetGuildId(guild)) .. " yet.")
+		d("|c6C00FFAuto Recruit - |cFF8174You have not specified a recruitment message for " .. GetGuildName(GetGuildId(guild)) .. " yet.")
   	end
   end
 

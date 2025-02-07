@@ -268,6 +268,20 @@ function AR.MakeMenu()
             width = "full",
             default = AR.defaults.portMode,
         },
+
+				{
+					type = "dropdown",
+					name = "Included zones:",
+					tooltip = "Major: main base and DLC chapter zones\nAll: all public map zones",
+					choices = {"Major", "All"},
+					getFunc = function() return AR.settings.includedZones end,
+					setFunc = function(value)
+						AR.settings.includedZones = value
+						AR.getZones()
+					end,
+					width = "full",
+					default = AR.defaults.includedZones,
+				},
         
         {
             type = "checkbox",
@@ -309,20 +323,6 @@ function AR.MakeMenu()
             setFunc = function(value) AR.settings.portingTime = value end,
             width = "full",
             default = AR.defaults.portingTime,
-        },
-
-        {
-            type = "dropdown",
-            name = "Included zones:",
-            tooltip = "Major: main base and DLC chapter zones\nAll: all public map zones",
-            choices = {"Major", "All"},
-            getFunc = function() return AR.settings.includedZones end,
-            setFunc = function(value)
-                AR.settings.includedZones = value
-                AR.getZones()
-                end,
-            width = "full",
-            default = AR.defaults.includedZones,
         }
   }
 
