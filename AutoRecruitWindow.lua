@@ -6,45 +6,40 @@ local AR = AutoRecruit
 
 function AR.MakeWindow()
 	AR.window = wm:CreateTopLevelWindow("ARWindow")
-	local ar = AR.window
-	ar:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, AR.settings.x, AR.settings.y)
-	ar:SetMovable(true)
-	ar:SetHidden(not AR.settings.shown)
-	ar:SetMouseEnabled(true)
-	ar:SetClampedToScreen(true)
-	ar:SetDimensions(0,0)
-	ar:SetResizeToFitDescendents(true)
-	ar:SetHandler("OnMoveStop", function()
-		AR.settings.x = ar:GetLeft()
-		AR.settings.y = ar:GetTop()
+	local win = AR.window
+	win:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, AR.settings.x, AR.settings.y)
+	win:SetMovable(true)
+	win:SetHidden(not AR.settings.shown)
+	win:SetMouseEnabled(true)
+	win:SetClampedToScreen(true)
+	win:SetDimensions(0,0)
+	win:SetResizeToFitDescendents(true)
+	win:SetHandler("OnMoveStop", function()
+		AR.settings.x = win:GetLeft()
+		AR.settings.y = win:GetTop()
 	end)
 
-	ar.title = wm:CreateControl("ARTitle", ar, CT_LABEL)
-	ar.title:SetAnchor(TOP, ar, TOP, 0, 5)
-	ar.title:SetFont("EsoUi/Common/Fonts/Univers67.otf|18|soft-shadow-thin")
-	ar.title:SetColor(.9,.9,.7,1)
-	ar.title:SetStyleColor(0,0,0,1)
-	ar.title:SetText("Auto Recruit")
-	ar.title:SetHidden(not AR.settings.showtitle)
+	win.title = wm:CreateControl("ARTitle", win, CT_LABEL)
+	win.title:SetAnchor(TOPLEFT, win, TOPLEFT, 8, 5)
+	win.title:SetFont("ZoFontWinH4")
+	win.title:SetColor(ZO_ColorDef.HexToFloats("6C00FF"))
+	win.title:SetStyleColor(0,0,0,1)
+	win.title:SetText("Auto Recruit - ")
+	win.title:SetHidden(false)
 
-	ar.zone = wm:CreateControl("ARZone", ar, CT_LABEL)
-	if (AR.settings.showtitle) then
-		ar.zone:SetAnchor(TOP, ar.title, BOTTOM, 0, 5)
-	else
-		ar.zone:SetAnchor(TOP, ar, TOP, 0, 5)
-	end
-	ar.zone:SetFont("EsoUi/Common/Fonts/Univers67.otf|17|soft-shadow-thin")
-	ar.zone:SetColor(.9, .9, .7, 1)
-	ar.zone:SetStyleColor(0,0,0,1)
-	ar.zone:SetText("Zone Name")
+	win.text = wm:CreateControl("ARZone", win, CT_LABEL)
+	win.text:SetAnchor(TOPLEFT, win.title, TOPRIGHT, 5, 0)
+	win.text:SetFont("ZoFontGameMedium")
+	win.text:SetColor(1, 1, 1, 1)
+	win.text:SetStyleColor(0,0,0,1)
+	win.text:SetText("-")
 
-	ar.entries = wm:CreateControl("AREntries", ar, CT_CONTROL)
-	ar.entries:SetAnchor(TOP, ar.zone, BOTTOM, 0, 0)
-	ar.entries:SetHidden(false)
-	ar.entries:SetResizeToFitDescendents(true)
+	win.backdrop = wm:CreateControl(nil, win, CT_BACKDROP) --BackdropControl#BackdropControl
+	win.backdrop:SetAnchor(TOPLEFT, win.title, TOPLEFT, -6, -4)
+	win.backdrop:SetAnchor(BOTTOMRIGHT, win.text, BOTTOMRIGHT, 6, 4)
+	win.backdrop:SetCenterColor(0,0,0,0.75)
+	win.backdrop:SetEdgeColor(0,0,0)
 
-	ar.entries:SetResizeToFitPadding(20, 10)
-	
 	if ZO_CompassFrame:IsHandlerSet("OnShow") then
 		local oldHandler = ZO_CompassFrame:GetHandler("OnShow")
 		ZO_CompassFrame:SetHandler("OnShow", function(...) oldHandler(...) if AR.settings.shown then AR.window:SetHidden(false) end end)
@@ -60,10 +55,54 @@ function AR.MakeWindow()
 	
 end
 
-
-function AR.PopulateWindow(guildName)
+function AR.PopulateWindow(text, active)
 	if AR.window == nil then AR.MakeWindow() end
-	AR.window.zone:SetText(guildName)
+	AR.window.text:SetText(text)
 	
 	AR.window:SetHidden(ZO_CompassFrame:IsHidden() or not AR.settings.shown)
+	AR.window.backdrop:SetHidden(not active)
+	AR.window.title:SetColor(ZO_ColorDef.HexToFloats(active and "9E33FF" or "6C00FF"))
+end
+
+local function getActivityMessage()
+	if AR.status == 2 and AR.settings.keepPorting then
+		local delay = AR.settings.portingTime*60-(GetTimeStamp()-AR.lastRound)
+		if delay>120 then
+			return "Starting another loop in " .. math.floor(delay/60) .. " minutes...", false
+		elseif delay>60 then
+			return "Starting another loop in ~1 minute...", false
+		elseif delay>5 then
+			return "Starting another loop in " .. delay .. " seconds...", false
+		elseif delay<=5 then
+			return "Starting another loop...", true
+		end
+		return "Auto-Port queued", false
+	elseif AR.status == 2 then
+		return "Auto-Port finished", false
+	elseif AR.status == 1 then
+		local s = string.format("Auto-Port %d/%d", AR.nextZone - 1, #AR.zones)
+		if AR.portingTo then
+			s = s .. string.format(" |c9DA2FF(porting to %s)|r", AR.portingTo)
+		elseif ZO_ChatWindowTextEntryEditBox:GetText() == AR.settings.ad[AR.getGuildIndex(AR.getIDfromName(AR.settings.recruitFor))] then
+			s = s .. " |cFAD20E(waiting to post)|r"
+		end
+		return s, true
+	end
+	return nil, false
+end
+
+function AR.RefreshWindow()
+	local text, active = getActivityMessage()
+	if text then
+		text = AR.settings.recruitFor .. ": " .. text
+		if AR.settings.whisperEnabled	then
+			text = text .. "; whisper enabled"
+		end
+	elseif AR.settings.whisperEnabled	then
+		text = AR.settings.recruitFor .. " whisper enabled"
+	else
+		text = "|c999999" .. AR.settings.recruitFor .. "|r"
+	end
+
+	AR.PopulateWindow(text, active)
 end

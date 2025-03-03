@@ -16,6 +16,7 @@ AR.nextZone = 1
 AR.status = 0
 AR.lastRound = 0
 AR.failed = 0
+AR.portingTo = nil
 AR.settings = {}
 AR.defaults = {
     recruitFor = GetGuildName(GetGuildId(1)),
@@ -46,14 +47,6 @@ AR.defaults = {
     welcomeCooldown = {30, 30, 30, 30, 30},
     adCooldown = {15, 15, 15, 15, 15},
 }
-
-
-  function AR.RefreshWindow()
-    if AR.settings.whisperEnabled
-     then AR.PopulateWindow("|c6C00FFAuto Recruit - |cFFFFFFRecruiting for " .. AR.settings.recruitFor)
-     else AR.PopulateWindow("|c6C00FFAuto Recruit - |cFFFFFFRecruiting paused for " .. AR.settings.recruitFor)
-    end
-  end
 
 
 	function AR.getIDfromName(guildname)
@@ -110,6 +103,7 @@ AR.defaults = {
     		d("|c82fa58Recruitment message for " .. GetGuildName(GetGuildId(guild)) .. " pasted to the chat (" .. currentZone .. ")")
     		ZO_ChatWindowTextEntryEditBox:SetText("/z " .. AR.settings.ad[guild])
     		AR.settings.recruitFor = GetGuildName(GetGuildId(guild))
+				AR.RefreshWindow()
   	  end
   	 else
 		d("|c6C00FFAuto Recruit - |cFF8174You have not specified a recruitment message for " .. GetGuildName(GetGuildId(guild)) .. " yet.")
@@ -230,12 +224,8 @@ AR.defaults = {
   			local userID, _, _, playerStatus = GetGuildMemberInfo(guildID, i)
 
   			if playerStatus~=4 and userID~=GetDisplayName() then
-  			  local _, _, zoneName, _, _, _, _, zoneID = GetGuildMemberCharacterInfo(guildID, i)
-  			  local memberInfo = {}
-
-  			  table.insert(memberInfo, userID)
-  			  table.insert(memberInfo, zoneID)
-  			  table.insert(AR.onlinePlayers, memberInfo)
+  			  local _, _, _, _, _, _, _, zoneID = GetGuildMemberCharacterInfo(guildID, i)
+  			  table.insert(AR.onlinePlayers, { userID, zoneID })
   			end
     	end
     end
@@ -257,7 +247,7 @@ AR.defaults = {
           if subCatCollectibleData:IsUnlocked() and not subCatCollectibleData:IsBlocked() then
             local houseID = subCatCollectibleData:GetReferenceId()
             local zoneID = GetHouseFoundInZoneId(houseID)
-            if AR.zoneHouses[zoneID] == nil then
+            if not AR.zoneHouses[zoneID] then
               local name, _, _, _, _, _, _, _, _ = GetCollectibleInfo(subCatCollectibleData:GetId())
               AR.zoneHouses[zoneID] = { houseID, name }
             end
@@ -322,6 +312,7 @@ function AR.afterPort(destination)
 
 	if GetUnitWorldPosition("player") == destination then
 		AR.failed = 0
+		AR.portingTo = nil
 		
 		if AR.settings.postAd then
 			AutoRecruitKeybind.pasteText(AR.getGuildIndex(AR.getIDfromName(AR.settings.recruitFor)))
@@ -335,19 +326,38 @@ end
 
 function AR.portFailed(destination)
 	local zoneName = GetZoneNameById(destination)
-  
+
 	if AR.status == 1 then
 	  d("|c6C00FFAuto Port - |cFFFFFFFailed to port to " .. zoneName .. " trying again...")
+		AR.portingTo = nil
 	  AR.nextZone = AR.nextZone - 1
 	  AR.start()
 	end
 end
 
+function AR.keepPorting()
+	if AR.status ~= 2 then return end
 
+	local delay = AR.settings.portingTime*60-(GetTimeStamp()-AR.lastRound)
+
+	if delay<=5 then
+		AR.start()
+	else
+		if delay>120 then
+			d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in " .. math.floor(delay/60) .. " minutes...")
+		elseif delay>60 then
+			d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in ~1 minute...")
+		else
+			d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in " .. delay .. " seconds...")
+		end
+		AR.RefreshWindow()
+		zo_callLater(function() AR.keepPorting() end, 5*1000)
+	end
+end
 
 function AR.start()
 	if AR.status == 0 then return end
-	
+
 	if AR.status == 2 then
 		d("|c6C00FFAuto Port - |cFFFFFFStarting another loop now...")
 	end
@@ -363,23 +373,10 @@ function AR.start()
   	d("|c6C00FFAuto Port - |cFFFFFFLoop finished")
 
   	if AR.settings.keepPorting then
-  		local delay = AR.settings.portingTime*60-(GetTimeStamp()-AR.lastRound)
-
-  		if delay>120 then
-    		d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in " .. math.floor(delay/60) .. " minutes...")
-    		zo_callLater(function() if AR.status == 2 then d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in 1 minute...") end end, (delay-60)*1000)
-    		zo_callLater(function() if AR.status == 2 then AR.start() end end, delay*1000)
-    	 elseif delay>60 then
-    		d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in ~1 minute...")
-    		zo_callLater(function() if AR.status == 2 then AR.start() end end, delay*1000)
-    	 elseif delay>5 then
-    		d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in " .. delay .. " seconds...")
-    		zo_callLater(function() if AR.status == 2 then AR.start() end end, delay*1000)
-    	 elseif delay<=5 then
-    		AR.start()
-    	end
+			AR.keepPorting()
   	end
-  	
+
+	  AR.RefreshWindow()
   	return
   end
 
@@ -398,7 +395,7 @@ function AR.start()
   end
 
  	if AR.lastPosted[nextZoneName] and AR.settings.skipZoneOnCD then
- 		cooldown = AR.settings.adCooldown[guild]*60-(GetTimeStamp()-AR.lastPosted[nextZoneName])
+ 		local cooldown = AR.settings.adCooldown[guild]*60-(GetTimeStamp()-AR.lastPosted[nextZoneName])
  		
  		if cooldown>10 then
  			d("|c6C00FFAuto Port - |cFFFFFF" .. nextZoneName .. " is still on cooldown. Skipping this zone...")
@@ -416,6 +413,7 @@ function AR.start()
   	if userZone == AR.zones[AR.nextZone] and ownZone ~= userZone then
   		d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. userID .. " in " .. GetZoneNameById(userZone))
   		AR.nextZone = AR.nextZone + 1
+			AR.portingTo = GetZoneNameById(userZone)
   		zo_callLater(function() JumpToGuildMember(userID) end, 100)
     	em:RegisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED, function() AR.afterPort(userZone) end)
     	zo_callLater(function()
@@ -429,6 +427,7 @@ function AR.start()
     		  end
     		end
     	end, 10000)
+		  AR.RefreshWindow()
   		return
   	end
   end
@@ -439,8 +438,10 @@ function AR.start()
     local houseID, houseName = unpack(AR.zoneHouses[houseZone])
 		d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. houseName .. " in " .. nextZoneName)
 		AR.nextZone = AR.nextZone + 1
+		AR.portingTo = nextZoneName
 		zo_callLater(function() RequestJumpToHouse(houseID, true) end, 100)
 		em:RegisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED, function() AR.afterPort(houseZone) end)
+		AR.RefreshWindow()
 		return
 	end
 
@@ -456,16 +457,13 @@ function AR.stop()
 	em:UnregisterForEvent("AutoPortArrived", EVENT_PLAYER_ACTIVATED)
   AR.status = 0
 	d("|c6C00FFAuto Port - |cFFFFFFStopped porting.")
+	AR.RefreshWindow()
 end
 
 
 
 function AR.chatMessage(_, channel, _, text, _, userID)
-	
-	AR.RefreshWindow()
-	
 	if not text or string.len(text) < 1 then return end
-	
 	
 	if channel == 2 and AR.settings.whisperEnabled then
 		local key = AR.settings.keyword
@@ -520,4 +518,6 @@ function AR.chatMessage(_, channel, _, text, _, userID)
 	   and userID == GetDisplayName() and text == AR.settings.ad[AR.getGuildIndex(AR.getIDfromName(AR.settings.recruitFor))] then
 	 AR.start()
 	end
+
+	AR.RefreshWindow()
 end
