@@ -204,14 +204,19 @@ AR.defaults = {
     for i = 1, GetNumMaps() do
       local _, _, _, zoneIndex, _ = GetMapInfoByIndex(i)
       local zoneID = GetZoneId(zoneIndex)
-	  -- Include parent zones, plus Apocrypha, Arteum and the Brass Fortress;
-	  -- remove "Clean Test", Cyrodiil and Imperial City
-      if (zoneID == GetParentZoneId(zoneID) or zoneID==981 or zoneID==1413 or zoneID==1027) and
-          GetNumSkyshardsInZone(zoneID)>=minSkyshards and
+	  -- Include parent zones, plus Apocrypha, Arteum and Solstice;
+	  -- exclude "Clean Test", Cyrodiil and Imperial City
+      if (zoneID == GetParentZoneId(zoneID) or zoneID==1413 or zoneID==1027 or zoneID == 1502) and
+					(GetNumSkyshardsInZone(zoneID)>=minSkyshards or zoneID == 1502) and
           zoneID~=181 and zoneID~=584 and zoneID~=2 and CanJumpToPlayerInZone(zoneID) then
         table.insert(AR.zones, zoneID)
       end
     end
+
+		if minSkyshards == 0 then
+			-- The Brass Fortress is a separate zone chat area, but not on a top-level map
+			table.insert(AR.zones, 981)
+		end
   end
 
 
