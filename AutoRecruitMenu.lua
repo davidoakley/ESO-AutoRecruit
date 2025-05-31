@@ -243,8 +243,8 @@ function AR.MakeMenu()
 
         {
             type = "checkbox",
-            name = "Show Text Overlay",
-            tooltip = "Display 'Recruiting for " .. AR.settings.recruitFor ..  "'",
+            name = "Show Info Overlay",
+            tooltip = "Display a settings information message onscreen",
             getFunc = function() return AR.settings.shown end,
             setFunc = function(value) AR.settings.shown = value end,
             width = "full",
