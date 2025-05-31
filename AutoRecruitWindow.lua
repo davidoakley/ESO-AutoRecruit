@@ -104,11 +104,13 @@ function AR.RefreshWindow()
 		text = "|c999999" .. AR.settings.recruitFor .. "|r"
 	end
 
-	local pending = GetGuildFinderNumGuildApplications(AR.getIDfromName(AR.settings.recruitFor))
-	if pending > 0 then
-		text = text .. " |c66ff66(" .. pending
-		text = text .. (pending > 1 and " applications pending)|r" or " application pending)|r")
- 	end
+	if AR.settings.showPending then
+		local pending = GetGuildFinderNumGuildApplications(AR.getIDfromName(AR.settings.recruitFor))
+		if pending > 0 then
+			text = text .. " |c66ff66(" .. pending
+			text = text .. (pending > 1 and " applications pending)|r" or " application pending)|r")
+		end
+	end
 
 	AR.PopulateWindow(text, active)
 end

@@ -30,6 +30,7 @@ AR.defaults = {
     trader = true,
     warning = 5,
     shown = true,
+		showPending = true,
 
     portMode = "Semi-auto",
     postAd = true,

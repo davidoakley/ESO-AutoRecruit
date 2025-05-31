@@ -244,11 +244,21 @@ function AR.MakeMenu()
         {
             type = "checkbox",
             name = "Show Info Overlay",
-            tooltip = "Display a settings information message onscreen",
+            tooltip = "Display a status information message onscreen",
             getFunc = function() return AR.settings.shown end,
             setFunc = function(value) AR.settings.shown = value end,
             width = "full",
             default = AR.defaults.shown,
+        },
+
+        {
+            type = "checkbox",
+            name = "Show Pending Applications on Overlay",
+            tooltip = "List a pending applications count on the info overlay",
+            getFunc = function() return AR.settings.showPending end,
+            setFunc = function(value) AR.settings.showPending = value end,
+            width = "full",
+            default = AR.defaults.showPending,
         },
 
 
