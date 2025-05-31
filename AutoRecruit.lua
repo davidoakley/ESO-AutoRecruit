@@ -348,15 +348,23 @@ function AR.keepPorting()
 	if delay<=5 then
 		AR.start()
 	else
-		if delay>120 then
-			d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in " .. math.floor(delay/60) .. " minutes...")
-		elseif delay>60 then
-			d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in ~1 minute...")
-		else
-			d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in " .. delay .. " seconds...")
-		end
 		AR.RefreshWindow()
-		zo_callLater(function() AR.keepPorting() end, 5*1000)
+
+		if AR.settings.shown then
+			delay = 5 -- If the window is visible, update status every 5 seconds
+		else
+			if delay>120 then
+				d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in " .. math.floor(delay/60) .. " minutes...")
+				delay = 60
+			elseif delay>60 then
+				d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in ~1 minute...")
+				delay = delay - 45 -- next alert with 45 seconds left
+			else
+				d("|c6C00FFAuto Port - |cFFFFFFStarting another loop in " .. delay .. " seconds...")
+				delay = 15
+			end
+		end
+		zo_callLater(function() AR.keepPorting() end, delay*1000)
 	end
 end
 
