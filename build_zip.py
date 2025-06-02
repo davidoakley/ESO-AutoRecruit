@@ -35,7 +35,7 @@ copy(r'*.xml', '_build/AutoRecruit')
 # shutil.copytree('media', '_build/AutoRecruit/media')
 # shutil.copytree('lang', '_build/AutoRecruit/lang')
 
-with open('AutoRecruit.txt', 'r') as inFile:
+with open('AutoRecruit.addon', 'r') as inFile:
     txt = inFile.read()
     # txt = re.sub(r'## Version: \w+', f"## Version: {version}", txt)
     # txt = re.sub(r'## AddOnVersion: \w+', f"## AddOnVersion: {addOnVersion}", txt)
