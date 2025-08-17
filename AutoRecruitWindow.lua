@@ -93,23 +93,24 @@ end
 
 function AR.RefreshWindow()
 	local text, active = getActivityMessage()
+	local recruitFor = AR.settings.recruitFor
+	if AR.settings.showPending then
+		local pending = GetGuildFinderNumGuildApplications(AR.getIDfromName(AR.settings.recruitFor))
+		if pending > 0 then
+			recruitFor = recruitFor .. " |c66ff66(" .. pending
+			recruitFor = recruitFor .. (pending > 1 and " applications pending)|r" or " application pending)|r")
+		end
+	end
+
 	if text then
-		text = AR.settings.recruitFor .. ": " .. text
+		text = recruitFor .. " - " .. text
 		if AR.settings.whisperEnabled	then
 			text = text .. "; whisper enabled"
 		end
 	elseif AR.settings.whisperEnabled	then
-		text = AR.settings.recruitFor .. " whisper enabled"
+		text = recruitFor .. " whisper enabled"
 	else
-		text = "|c999999" .. AR.settings.recruitFor .. "|r"
-	end
-
-	if AR.settings.showPending then
-		local pending = GetGuildFinderNumGuildApplications(AR.getIDfromName(AR.settings.recruitFor))
-		if pending > 0 then
-			text = text .. " |c66ff66(" .. pending
-			text = text .. (pending > 1 and " applications pending)|r" or " application pending)|r")
-		end
+		text = "|c999999" .. recruitFor .. "|r"
 	end
 
 	AR.PopulateWindow(text, active)
