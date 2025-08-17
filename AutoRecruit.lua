@@ -91,23 +91,23 @@ AR.defaults = {
   	 	end
 
   	 	if cooldown>1 and AR.doubleCheck ~= 1 then
-  	 		d("|c6C00FFAuto Recruit - |cFFFFFF " .. currentZone .. " still on cooldown for " .. cooldown .. " more minutes")
+  	 		d(zo_strformat("|c6C00FFAuto Recruit - |cFFFFFF <<1>> still on cooldown for <<2>> more minutes", currentZone, cooldown))
   	 		zo_callLater(function() d("|cFFFFFFPress 'Paste' again within 5 seconds to post it anyways") end, 1500)
   	 		AR.doubleCheck = 1
   	 		zo_callLater(function() AR.doubleCheck = 0 end, 6000)
   	 	 elseif cooldown==1 and AR.doubleCheck ~= 1 then
-  	 		d("|c6C00FFAuto Recruit - |cFFFFFF " .. currentZone .. " still on cooldown for " .. cooldown .. " more minute")
+  	 		d(zo_strformat("|c6C00FFAuto Recruit - |cFFFFFF <<1>> still on cooldown for <<2>> more minute", currentZone, cooldown))
   	 		zo_callLater(function() d("|cFFFFFFPress 'Paste' again within 5 seconds to post it anyways") end, 1500)
   	 		AR.doubleCheck = 1
   	 		zo_callLater(function() AR.doubleCheck = 0 end, 6000)
   	 	 else
-    		d("|c82fa58Recruitment message for " .. GetGuildName(GetGuildId(guild)) .. " pasted to the chat (" .. currentZone .. ")")
+				d(zo_strformat("|c82fa58Recruitment message for <<1>> pasted to the chat (<<2>>)", GetGuildName(GetGuildId(guild)), currentZone))
     		ZO_ChatWindowTextEntryEditBox:SetText("/z " .. AR.settings.ad[guild])
     		AR.settings.recruitFor = GetGuildName(GetGuildId(guild))
 				AR.RefreshWindow()
   	  end
   	 else
-		d("|c6C00FFAuto Recruit - |cFF8174You have not specified a recruitment message for " .. GetGuildName(GetGuildId(guild)) .. " yet.")
+		d(zo_strformat("|c6C00FFAuto Recruit - |cFF8174You have not specified a recruitment message for <<1>> yet.", GetGuildName(GetGuildId(guild))))
   	end
   end
 
@@ -334,7 +334,7 @@ function AR.portFailed(destination)
 	local zoneName = GetZoneNameById(destination)
 
 	if AR.status == 1 then
-	  d("|c6C00FFAuto Port - |cFFFFFFFailed to port to " .. zoneName .. " trying again...")
+	  d(zo_strformat("|c6C00FFAuto Port - |cFFFFFFFailed to port to <<1>> trying again...", zoneName))
 		AR.portingTo = nil
 	  AR.nextZone = AR.nextZone - 1
 	  AR.start()
@@ -412,7 +412,7 @@ function AR.start()
  		local cooldown = AR.settings.adCooldown[guild]*60-(GetTimeStamp()-AR.lastPosted[nextZoneName])
  		
  		if cooldown>10 then
- 			d("|c6C00FFAuto Port - |cFFFFFF" .. nextZoneName .. " is still on cooldown. Skipping this zone...")
+ 			d(zo_strformat("|c6C00FFAuto Port - |cFFFFFF<<1>> is still on cooldown. Skipping this zone...", nextZoneName))
   		AR.nextZone = AR.nextZone + 1
   		AR.start()
  		  return
@@ -425,7 +425,7 @@ function AR.start()
   	local userZone = AR.onlinePlayers[i][2]
 
   	if userZone == AR.zones[AR.nextZone] and ownZone ~= userZone then
-  		d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. userID .. " in " .. GetZoneNameById(userZone))
+  		d(zo_strformat("|c6C00FFAuto Port - |cFFFFFFJumping to <<1>> in <<2>>", userID, GetZoneNameById(userZone)))
   		AR.nextZone = AR.nextZone + 1
 			AR.portingTo = GetZoneNameById(userZone)
   		zo_callLater(function() JumpToGuildMember(userID) end, 100)
@@ -436,7 +436,7 @@ function AR.start()
     		    AR.failed = AR.failed + 1
     		    AR.portFailed(userZone)
     		   else
-    		   	d("|c6C00FFAuto Port - |cFFFFFFPorting to " .. GetZoneNameById(userZone) .. " failed. Try again later.")
+    		   	d(zo_strformat("|c6C00FFAuto Port - |cFFFFFFPorting to <<1>> failed. Try again later.", GetZoneNameById(userZone)))
     		   	AR.stop()
     		  end
     		end
@@ -450,7 +450,7 @@ function AR.start()
 	if houseId and CanJumpToHouseFromCurrentLocation() then
 		local houseZone = AR.zones[AR.nextZone]
     local houseID, houseName = unpack(AR.zoneHouses[houseZone])
-		d("|c6C00FFAuto Port - |cFFFFFFJumping to " .. houseName .. " in " .. nextZoneName)
+		d(zo_strformat("|c6C00FFAuto Port - |cFFFFFFJumping to <<1>> in <<2>>", houseName, nextZoneName))
 		AR.nextZone = AR.nextZone + 1
 		AR.portingTo = nextZoneName
 		zo_callLater(function() RequestJumpToHouse(houseID, true) end, 100)
@@ -459,7 +459,7 @@ function AR.start()
 		return
 	end
 
-  d("|c6C00FFAuto Port - |cFFFFFFCould not port to " .. nextZoneName .. ". Skipping this zone...")
+	d(zo_strformat("|c6C00FFAuto Port - |cFFFFFFCould not port to <<1>>. Skipping this zone...", nextZoneName))
   AR.nextZone = AR.nextZone + 1
   AR.start()
 end

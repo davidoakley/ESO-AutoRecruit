@@ -80,11 +80,11 @@ local function getActivityMessage()
 	elseif AR.status == 2 then
 		return "Auto-Port finished", false
 	elseif AR.status == 1 then
-		local s = string.format("Auto-Port %d/%d", AR.nextZone - 1, #AR.zones)
+		local s = zo_strformat("Auto-Port <<1>>/<<2>>", AR.nextZone - 1, #AR.zones)
 		if AR.portingTo then
-			s = s .. string.format(" |c9DA2FF(porting to %s)|r", AR.portingTo)
+			s = s .. zo_strformat(" - |c9DA2FFporting to <<1>>|r", AR.portingTo)
 		elseif ZO_ChatWindowTextEntryEditBox:GetText() == AR.settings.ad[AR.getGuildIndex(AR.getIDfromName(AR.settings.recruitFor))] then
-			s = s .. " |cFAD20E(waiting to post)|r"
+			s = s .. " - |cFAD20Ewaiting to post|r"
 		end
 		return s, true
 	end
