@@ -80,11 +80,11 @@ local function getActivityMessage()
 	elseif AR.status == 2 then
 		return "Auto-Port finished", false
 	elseif AR.status == 1 then
-		local s = string.format("Auto-Port %d/%d", AR.nextZone - 1, #AR.zones)
+		local s = zo_strformat("Auto-Port <<1>>/<<2>>", AR.nextZone - 1, #AR.zones)
 		if AR.portingTo then
-			s = s .. string.format(" |c9DA2FF(porting to %s)|r", AR.portingTo)
+			s = s .. zo_strformat(" - |c9DA2FFporting to <<1>>|r", AR.portingTo)
 		elseif ZO_ChatWindowTextEntryEditBox:GetText() == AR.settings.ad[AR.getGuildIndex(AR.getIDfromName(AR.settings.recruitFor))] then
-			s = s .. " |cFAD20E(waiting to post)|r"
+			s = s .. " - |cFAD20Ewaiting to post|r"
 		end
 		return s, true
 	end
@@ -93,23 +93,24 @@ end
 
 function AR.RefreshWindow()
 	local text, active = getActivityMessage()
+	local recruitFor = AR.settings.recruitFor
+	if AR.settings.showPending then
+		local pending = GetGuildFinderNumGuildApplications(AR.getIDfromName(AR.settings.recruitFor))
+		if pending > 0 then
+			recruitFor = recruitFor .. " |c66ff66(" .. pending
+			recruitFor = recruitFor .. (pending > 1 and " applications pending)|r" or " application pending)|r")
+		end
+	end
+
 	if text then
-		text = AR.settings.recruitFor .. ": " .. text
+		text = recruitFor .. " - " .. text
 		if AR.settings.whisperEnabled	then
 			text = text .. "; whisper enabled"
 		end
 	elseif AR.settings.whisperEnabled	then
-		text = AR.settings.recruitFor .. " whisper enabled"
+		text = recruitFor .. " whisper enabled"
 	else
-		text = "|c999999" .. AR.settings.recruitFor .. "|r"
-	end
-
-	if AR.settings.showPending then
-		local pending = GetGuildFinderNumGuildApplications(AR.getIDfromName(AR.settings.recruitFor))
-		if pending > 0 then
-			text = text .. " |c66ff66(" .. pending
-			text = text .. (pending > 1 and " applications pending)|r" or " application pending)|r")
-		end
+		text = "|c999999" .. recruitFor .. "|r"
 	end
 
 	AR.PopulateWindow(text, active)
