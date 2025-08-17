@@ -4,7 +4,7 @@ local em = EVENT_MANAGER
 AutoRecruitKeybind = {}
 
 AR.name = "AutoRecruit"
-AR.version = "3.1.0"
+AR.version = "3.2.1"
 AR.cooldown = {0, 0, 0, 0, 0}
 AR.inviteeID = "@"
 AR.posted = ""

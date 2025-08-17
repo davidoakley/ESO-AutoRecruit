@@ -14,7 +14,7 @@ function AR.MakeMenu()
     		type = "panel",
     		name = "Auto Recruit",
     		displayName = "Auto Recruit",
-    		author = "|c6C00FF@peniku8|r",
+    		author = "|c6C00FFpeniku8|r, |c4444CCSirNightstorm|r",
         version = AR.version,
         --slashCommand = "/autorecruit",
         registerForRefresh = true,
